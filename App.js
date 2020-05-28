@@ -2,7 +2,7 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 
-import { HomeScreen, PatientScreen } from './screens'
+import { HomeScreen, PatientScreen, AddPatientScreen } from './screens'
 
 const Stack = createStackNavigator()
 
@@ -29,12 +29,26 @@ export default function App() {
 					options={{
 						title: 'Карта пациента',
 						headerTintColor: '#2A86FF',
-						headerTitleAlign: 'left',
+						headerTitleAlign: 'center',
 						headerTitleStyle: {
 							fontWeight: 'bold',
 							fontSize: 20,
 						},
-						headerBackTitle: ' ',
+						headerBackTitleVisible: false,
+					}}
+				/>
+				<Stack.Screen
+					name='AddPatient'
+					component={AddPatientScreen}
+					options={{
+						title: 'Добавить пациента',
+						headerTintColor: '#2A86FF',
+						headerTitleAlign: 'center',
+						headerTitleStyle: {
+							fontWeight: 'bold',
+							fontSize: 20,
+						},
+						headerBackTitleVisible: false,
 					}}
 				/>
 			</Stack.Navigator>

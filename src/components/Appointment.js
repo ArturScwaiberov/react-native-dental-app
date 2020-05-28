@@ -3,21 +3,38 @@ import styled from 'styled-components/native'
 
 import GrayText from './GrayText'
 import Badge from './Badge'
+import getAvatartColor from '../../utils/getAvatartColor'
 
 const Appointment = ({ navigation, item }) => {
-	const { user, diagnosis, active, time } = item
+	const { patientId, diagnosis, active, time } = item
+	//console.log(item)
+	const Ava = () => {
+		if (patientId.avatar) {
+			return <Avatar source={{ uri: patientId.avatar }} />
+		} else {
+			const firstLetter = patientId.fullName[0].toUpperCase()
+			const avatarColors = getAvatartColor(firstLetter)
+			return (
+				<FirstLetterHandler style={{ backgroundColor: avatarColors.background }}>
+					<FirstLetter style={{ color: avatarColors.color }}>{firstLetter}</FirstLetter>
+				</FirstLetterHandler>
+			)
+		}
+	}
+
 	return (
 		<GroupItem
 			onPress={() =>
 				navigation.navigate('Patient', {
-					userName: user.fullName,
-					userPhone: user.phone,
+					userName: patientId.fullName,
+					userPhone: patientId.phone,
+					patientId: patientId._id,
 				})
 			}
 		>
-			<Avatar source={{ uri: user.avatar }} />
+			<Ava />
 			<GroupDesc>
-				<FullName>{user.fullName}</FullName>
+				<FullName>{patientId.fullName}</FullName>
 				<GrayText>{diagnosis}</GrayText>
 			</GroupDesc>
 			{/* <Badge active={active}>{time}</Badge> */}
@@ -69,6 +86,21 @@ const GroupDesc = styled.View({
 const FullName = styled.Text({
 	fontSize: '16px',
 	fontWeight: 600,
+})
+
+const FirstLetter = styled.Text({
+	fontSize: '26px',
+	fontWeight: 'bold',
+	marginLeft: 1,
+})
+
+const FirstLetterHandler = styled.View({
+	borderRadius: '50px',
+	height: '40px',
+	width: '40px',
+	marginRight: '15px',
+	justifyContent: 'center',
+	alignItems: 'center',
 })
 
 const Avatar = styled.Image({

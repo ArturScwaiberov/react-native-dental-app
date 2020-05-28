@@ -1,16 +1,30 @@
-import React from 'react'
-import { View, Platform } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Platform, ActivityIndicator, Linking } from 'react-native'
 import styled from 'styled-components'
-import {
-	Foundation,
-	MaterialCommunityIcons,
-	Ionicons,
-} from '@expo/vector-icons'
+import { Foundation, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons'
 
 import { GrayText, Button, Badge } from '../src/components'
+import { patientsApi } from '../utils/api'
 
-export default function PatientScreen({ route, navigation }) {
-	const { userName, userPhone } = route.params
+const PatientScreen = ({ route, navigation }) => {
+	const { patientId, userName, userPhone } = route.params
+
+	const [appointments, setAppointments] = useState([])
+	const [isLoading, setIsLoading] = useState(true)
+
+	useEffect(() => {
+		patientsApi
+			.show(patientId)
+			.then(({ data }) => {
+				setAppointments(data.data.appointments)
+				setIsLoading(false)
+			})
+			.catch((e) => {
+				setIsLoading(false)
+				console.log(e)
+			})
+	}, [])
+
 	return (
 		<Container>
 			<View style={{ paddingLeft: 20, paddingRight: 20, paddingBottom: 30 }}>
@@ -18,7 +32,7 @@ export default function PatientScreen({ route, navigation }) {
 				<GrayText style={{ marginBottom: 19 }}>{userPhone}</GrayText>
 				<ButtonsWrapper>
 					<Button>Формула зубов</Button>
-					<CallButton>
+					<CallButton onPress={() => Linking.openURL('tel:+' + userPhone)}>
 						<Foundation
 							style={{ marginTop: Platform.OS === 'ios' ? 2 : 0 }}
 							name='telephone'
@@ -42,60 +56,59 @@ export default function PatientScreen({ route, navigation }) {
 					>
 						Приемы
 					</GrayText>
-					<AppointmentCard
-						style={{
-							shadowColor: 'gray',
-							shadowOffset: {
-								width: 0,
-								height: 0,
-							},
-							shadowOpacity: 0.1,
-							shadowRadius: 2,
-							elevation: 1,
-						}}
-					>
-						<MoreButton onPress={() => alert(userName)}>
-							<Ionicons
-								name='md-more'
-								size={34}
-								color='#A3A3A3'
-								onPress={() => alert(userName)}
-							/>
-						</MoreButton>
-						<AppointmentCardRow>
-							<Foundation
-								style={{ marginRight: 10 }}
-								name='wrench'
-								size={20}
-								color='#A3A3A3'
-							/>
-							<AppointmentCardLabel>
-								Зуб: <Bold>12</Bold>
-							</AppointmentCardLabel>
-						</AppointmentCardRow>
+					{isLoading ? (
+						<ActivityIndicator size='large' color='#2A86FF' />
+					) : (
+						appointments.map((appointment) => (
+							<AppointmentCard
+								key={appointment._id}
+								style={{
+									shadowColor: 'gray',
+									shadowOffset: { width: 0, height: 0 },
+									shadowOpacity: 0.1,
+									shadowRadius: 2,
+									elevation: 1,
+								}}
+							>
+								<MoreButton onPress={() => alert(userName)}>
+									<Ionicons
+										name='md-more'
+										size={34}
+										color='#A3A3A3'
+										onPress={() => alert(userName)}
+									/>
+								</MoreButton>
+								<AppointmentCardRow>
+									<Foundation style={{ marginRight: 10 }} name='wrench' size={20} color='#A3A3A3' />
+									<AppointmentCardLabel>
+										Зуб: <Bold>{appointment.dentNumber}</Bold>
+									</AppointmentCardLabel>
+								</AppointmentCardRow>
 
-						<AppointmentCardRow>
-							<MaterialCommunityIcons
-								style={{ marginRight: 7 }}
-								name='clipboard-text'
-								size={20}
-								color='#A3A3A3'
-							/>
-							<AppointmentCardLabel>
-								Диагноз: <Bold>пульпит</Bold>
-							</AppointmentCardLabel>
-						</AppointmentCardRow>
+								<AppointmentCardRow>
+									<MaterialCommunityIcons
+										style={{ marginRight: 7 }}
+										name='clipboard-text'
+										size={20}
+										color='#A3A3A3'
+									/>
+									<AppointmentCardLabel>
+										Диагноз: <Bold>{appointment.diagnosis}</Bold>
+									</AppointmentCardLabel>
+								</AppointmentCardRow>
 
-						<AppointmentCardRow>
-							<ButtonsWrapper style={{ flex: 1 }}>
-								<Badge active>22.04.2020 - 15:40</Badge>
-								<Badge color='green' style={{ fontWeight: 'bold' }}>
-									1500 с
-								</Badge>
-							</ButtonsWrapper>
-						</AppointmentCardRow>
+								<AppointmentCardRow>
+									<ButtonsWrapper style={{ flex: 1 }}>
+										<Badge active>
+											{appointment.date} - {appointment.time}
+										</Badge>
+										<Badge color='green' style={{ fontWeight: 'bold' }}>
+											{appointment.price} с
+										</Badge>
+									</ButtonsWrapper>
+								</AppointmentCardRow>
 
-						{/* <ButtonsWrapper>
+								{/* <ButtonsWrapper>
 							<Button>22.04.2020 - 15:40</Button>
 							<PriceButton>
 								<GrayText style={{ color: '#61BB42', fontWeight: 'bold' }}>
@@ -103,7 +116,9 @@ export default function PatientScreen({ route, navigation }) {
 								</GrayText>
 							</PriceButton>
 						</ButtonsWrapper> */}
-					</AppointmentCard>
+							</AppointmentCard>
+						))
+					)}
 				</View>
 			</PatientAppointments>
 		</Container>
@@ -147,6 +162,7 @@ const AppointmentCard = styled.View({
 	paddingBottom: 14,
 	paddingLeft: 20,
 	paddingRight: 20,
+	marginBottom: 20,
 })
 
 const PatientAppointments = styled.View({ flex: 1, backgroundColor: '#f8fafd' })
@@ -187,3 +203,5 @@ const CallButton = styled.TouchableOpacity({
 	backgroundColor: '#84D269',
 	marginLeft: 10,
 })
+
+export default PatientScreen
