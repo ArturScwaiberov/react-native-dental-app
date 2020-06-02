@@ -19,26 +19,28 @@ import { patientsApi } from '../utils/api'
 const AddPatientScreen = ({ navigation }) => {
 	const [values, setValues] = useState({})
 
-	const handleChange = (name, e) => {
-		const text = e.nativeEvent.text
+	const setFieldValue = (name, value) => {
 		setValues({
 			...values,
-			[name]: text,
+			[name]: value,
 		})
+	}
+
+	const handleInputChange = (name, e) => {
+		const text = e.nativeEvent.text
+		setFieldValue(name, text)
 	}
 
 	const submitHandler = () => {
-		patientsApi.add(values).then(() => {
-			navigation.navigate('Home')
-		})
-	}
-
-	const handleChange2 = (gender, value) => {
-		setValues({
-			...values,
-			[gender]: value,
-		})
-		console.log(values)
+		patientsApi
+			.add(values)
+			.then(() => {
+				navigation.navigate('Home')
+			})
+			.catch((e) => {
+				alert(e)
+			})
+		/* alert(JSON.stringify(values)) */
 	}
 
 	return (
@@ -48,7 +50,7 @@ const AddPatientScreen = ({ navigation }) => {
 					<Item picker style={{ borderWidth: 0 }} /* floatingLabel */>
 						{/* <Label>Аватар</Label> */}
 						<Input
-							onChange={handleChange.bind(this, 'avatar')}
+							onChange={handleInputChange.bind(this, 'avatar')}
 							value={values.avatar}
 							clearButtonMode='while-editing'
 							placeholder='Аватар'
@@ -56,7 +58,7 @@ const AddPatientScreen = ({ navigation }) => {
 					</Item>
 					<Item picker>
 						<Input
-							onChange={handleChange.bind(this, 'fullName')}
+							onChange={handleInputChange.bind(this, 'fullName')}
 							value={values.fullName}
 							clearButtonMode='while-editing'
 							placeholder='* ФИО (мин 4)'
@@ -65,17 +67,16 @@ const AddPatientScreen = ({ navigation }) => {
 					</Item>
 					<Item picker>
 						<Input
-							onChange={handleChange.bind(this, 'phone')}
+							onChange={handleInputChange.bind(this, 'phone')}
 							value={values.phone}
 							keyboardType='phone-pad'
-							dataDetectorTypes='phoneNumber'
 							clearButtonMode='while-editing'
 							placeholder='* 996-700-126-646'
 						/>
 					</Item>
 					<Item picker>
 						<Input
-							onChange={handleChange.bind(this, 'email')}
+							onChange={handleInputChange.bind(this, 'email')}
 							value={values.email}
 							keyboardType='email-address'
 							clearButtonMode='while-editing'
@@ -92,7 +93,7 @@ const AddPatientScreen = ({ navigation }) => {
 							iosIcon={<Icon name='arrow-down' />}
 							placeholder='* Пол пациента'
 							selectedValue={values.gender}
-							onValueChange={handleChange2.bind(this, 'gender')}
+							onValueChange={setFieldValue.bind(this, 'gender')}
 						>
 							<Picker.Item label='Мужской' value='male' />
 							<Picker.Item label='Женский' value='femail' />

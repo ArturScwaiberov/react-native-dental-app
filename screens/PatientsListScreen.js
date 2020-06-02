@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { Animated, SectionList, RefreshControl, Alert } from 'react-native'
+import { Animated, FlatList, RefreshControl, Alert } from 'react-native'
 import styled from 'styled-components/native'
 import { Octicons } from '@expo/vector-icons'
 import { RectButton } from 'react-native-gesture-handler'
 import Swipeable from 'react-native-gesture-handler/Swipeable'
 
-import { appointmentsApi } from '../utils/api'
-import { Appointment, SectionTitle } from '../src/components'
+import { patientsApi } from '../utils/api'
+import { Patient } from '../src/components'
 
-const HomeScreen = ({ navigation }) => {
+const PatientsListScreen = ({ navigation }) => {
 	const [data, setData] = useState(null)
 	const [refreshing, setRefreshing] = useState(false)
 
-	const fetchAppointments = () => {
+	const fetchPatients = () => {
 		setRefreshing(true)
-		appointmentsApi
+		patientsApi
 			.get()
 			.then(({ data }) => {
 				setData(data.message)
@@ -26,12 +26,12 @@ const HomeScreen = ({ navigation }) => {
 			})
 	}
 
-	useEffect(fetchAppointments, [])
+	useEffect(fetchPatients, [])
 
-	const removeAppointment = (id) => {
+	const removePatient = (id) => {
 		Alert.alert(
-			'Удаление приема',
-			'Вы действительно хотите удалить прием?',
+			'Удаление пациента',
+			'Вы действительно хотите удалить пациента и его приемы?',
 			[
 				{
 					text: 'Отмена',
@@ -41,13 +41,9 @@ const HomeScreen = ({ navigation }) => {
 				{
 					text: 'Да, удалить',
 					onPress: () => {
-						const result = data.map((group) => {
-							const data = (group.data = group.data.filter((item) => item._id !== id))
-							group.data = data
-							return group
-						})
+						const result = data.filter((item) => item._id !== id)
 						setData(result)
-						//appointmentsApi.remove(id)
+						patientsApi.remove(id)
 					},
 					style: 'default',
 				},
@@ -66,7 +62,7 @@ const HomeScreen = ({ navigation }) => {
 			if (text === 'pencil') {
 				alert('hey')
 			} else {
-				removeAppointment(id)
+				removePatient(id)
 			}
 		}
 
@@ -98,25 +94,20 @@ const HomeScreen = ({ navigation }) => {
 
 	return (
 		<Container>
-			<SectionList
+			<FlatList
 				style={{ paddingLeft: 20, paddingRight: 20 }}
-				sections={data}
+				data={data}
 				keyExtractor={(item) => item._id}
 				renderItem={({ item }) => (
 					<Swipeable
 						renderRightActions={(progress) => renderRightActions(progress, item._id)}
 						friction={2}
 					>
-						<Appointment navigation={navigation} item={item} />
+						<Patient navigation={navigation} item={item} />
 					</Swipeable>
 				)}
-				renderSectionHeader={({ section }) =>
-					section.data.length > 0 ? <SectionTitle>{section.title}</SectionTitle> : null
-				}
-				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAppointments} />}
+				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchPatients} />}
 			/>
-			{/* убрал круглую кнопку, удалил импорт данной кнопки из компонентов
-			<PlusButton onPress={() => navigation.navigate('AddPatient')} /> */}
 		</Container>
 	)
 }
@@ -139,4 +130,4 @@ const ActionText = styled.Text({
 	padding: 10,
 })
 
-export default HomeScreen
+export default PatientsListScreen

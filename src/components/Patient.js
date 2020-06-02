@@ -3,49 +3,33 @@ import styled from 'styled-components/native'
 
 import GrayText from './GrayText'
 import Badge from './Badge'
-import getAvatartColor from '../../utils/getAvatartColor'
+import Ava from './Ava'
 
-const Appointment = ({ navigation, item }) => {
-	const { patientId, diagnosis, active, time } = item
-
-	const Ava = () => {
-		if (patientId.avatar) {
-			return <Avatar source={{ uri: patientId.avatar }} />
-		} else {
-			const firstLetter = patientId.fullName[0].toUpperCase()
-			const avatarColors = getAvatartColor(firstLetter)
-			return (
-				<FirstLetterHandler style={{ backgroundColor: avatarColors.background }}>
-					<FirstLetter style={{ color: avatarColors.color }}>{firstLetter}</FirstLetter>
-				</FirstLetterHandler>
-			)
-		}
-	}
-
+const Patient = ({ navigation, item }) => {
 	return (
 		<GroupItem
 			onPress={() =>
 				navigation.navigate('Patient', {
-					userName: patientId.fullName,
-					userPhone: patientId.phone,
-					patientId: patientId._id,
+					userName: item.fullName,
+					userPhone: item.phone,
+					patientId: item._id,
 				})
 			}
 		>
-			<Ava />
+			<Ava item={item} />
 			<GroupDesc>
-				<FullName>{patientId.fullName}</FullName>
-				<GrayText>{diagnosis}</GrayText>
+				<FullName>{item.fullName}</FullName>
+				<GrayText>{item.email}</GrayText>
 			</GroupDesc>
 			{/* <Badge active={active}>{time}</Badge> */}
-			<GroupTime active={active}>
-				<TimeText active={active}>{time}</TimeText>
+			<GroupTime>
+				<TimeText>{item.gender[0].toUpperCase()}</TimeText>
 			</GroupTime>
 		</GroupItem>
 	)
 }
 
-Appointment.defaultProps = {
+Patient.defaultProps = {
 	title: 'Untitled',
 	items: [],
 }
@@ -88,28 +72,6 @@ const FullName = styled.Text({
 	fontWeight: 600,
 })
 
-const FirstLetter = styled.Text({
-	fontSize: '26px',
-	fontWeight: 'bold',
-	marginLeft: 1,
-})
-
-const FirstLetterHandler = styled.View({
-	borderRadius: '50px',
-	height: '40px',
-	width: '40px',
-	marginRight: '15px',
-	justifyContent: 'center',
-	alignItems: 'center',
-})
-
-const Avatar = styled.Image({
-	borderRadius: '50px',
-	height: '40px',
-	width: '40px',
-	marginRight: '15px',
-})
-
 const GroupItem = styled.TouchableOpacity({
 	flexDirection: 'row',
 	alignItems: 'center',
@@ -119,4 +81,4 @@ const GroupItem = styled.TouchableOpacity({
 	borderBottomColor: '#F3F3F3',
 })
 
-export default Appointment
+export default Patient

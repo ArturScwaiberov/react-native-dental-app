@@ -54,7 +54,9 @@ const PatientScreen = ({ route, navigation }) => {
 							marginBottom: 13,
 						}}
 					>
-						Приемы
+						{appointments.length > 0
+							? 'Приемы'
+							: `У пациента ${userName} нет приемов, нажмите + для создания приема`}
 					</GrayText>
 					{isLoading ? (
 						<ActivityIndicator size='large' color='#2A86FF' />
