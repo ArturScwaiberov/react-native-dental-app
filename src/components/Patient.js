@@ -2,8 +2,9 @@ import React from 'react'
 import styled from 'styled-components/native'
 
 import GrayText from './GrayText'
-import Badge from './Badge'
+/* import Badge from './Badge' */
 import Ava from './Ava'
+import { phoneFormat } from '../../utils'
 
 const Patient = ({ navigation, item }) => {
 	return (
@@ -12,6 +13,7 @@ const Patient = ({ navigation, item }) => {
 				navigation.navigate('Patient', {
 					userName: item.fullName,
 					userPhone: item.phone,
+					userEmail: item.email,
 					patientId: item._id,
 				})
 			}
@@ -19,7 +21,7 @@ const Patient = ({ navigation, item }) => {
 			<Ava item={item} />
 			<GroupDesc>
 				<FullName>{item.fullName}</FullName>
-				<GrayText>{item.email}</GrayText>
+				<GrayText>{phoneFormat(item.phone)}</GrayText>
 			</GroupDesc>
 			{/* <Badge active={active}>{time}</Badge> */}
 			<GroupTime>
@@ -33,20 +35,6 @@ Patient.defaultProps = {
 	title: 'Untitled',
 	items: [],
 }
-
-/* const GroupDate = styled.Text`
-	color: ${(props) => (props.active ? '#FFF' : '#4294FF')};
-	background: ${(props) => (props.active ? '#2A86FF' : '#E9F5FF')};
-	border-color: ${(props) => (props.active ? '#2A86FF' : '#E9F5FF')};
-	border-width: 1px;
-	border-radius: 16px;
-	overflow: hidden;
-	font-size: 14px;
-	width: 70px;
-	height: 32px;
-	text-align: center;
-	line-height: 30px;
-` */
 
 const TimeText = styled.Text`
 	color: ${(props) => (props.active ? '#FFF' : '#4294FF')};

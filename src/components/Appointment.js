@@ -3,9 +3,9 @@ import styled from 'styled-components/native'
 
 import GrayText from './GrayText'
 import Badge from './Badge'
-import getAvatartColor from '../../utils/getAvatartColor'
+import { getAvatarColor } from '../../utils'
 
-const Appointment = ({ navigation, item }) => {
+const Appointment = ({ navigation, item, index }) => {
 	const { patientId, diagnosis, active, time } = item
 
 	const Ava = () => {
@@ -13,7 +13,7 @@ const Appointment = ({ navigation, item }) => {
 			return <Avatar source={{ uri: patientId.avatar }} />
 		} else {
 			const firstLetter = patientId.fullName[0].toUpperCase()
-			const avatarColors = getAvatartColor(firstLetter)
+			const avatarColors = getAvatarColor(firstLetter)
 			return (
 				<FirstLetterHandler style={{ backgroundColor: avatarColors.background }}>
 					<FirstLetter style={{ color: avatarColors.color }}>{firstLetter}</FirstLetter>
@@ -38,8 +38,8 @@ const Appointment = ({ navigation, item }) => {
 				<GrayText>{diagnosis}</GrayText>
 			</GroupDesc>
 			{/* <Badge active={active}>{time}</Badge> */}
-			<GroupTime active={active}>
-				<TimeText active={active}>{time}</TimeText>
+			<GroupTime active={index === 0 ? true : false}>
+				<TimeText active={index === 0 ? true : false}>{time}</TimeText>
 			</GroupTime>
 		</GroupItem>
 	)

@@ -15,7 +15,7 @@ import styled from 'styled-components/native'
 
 import { patientsApi } from '../utils'
 
-const AddPatientScreen = ({ navigation }) => {
+const EditPatientScreen = ({ navigation }) => {
 	const [values, setValues] = useState({})
 
 	const setFieldValue = (name, value) => {
@@ -128,4 +128,4 @@ const TomatoText = styled.Text({
 	color: 'tomato',
 })
 
-export default AddPatientScreen
+export default EditPatientScreen

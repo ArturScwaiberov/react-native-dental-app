@@ -1,29 +1,48 @@
 import React, { useState, useEffect } from 'react'
-import { Animated, FlatList, RefreshControl, Alert } from 'react-native'
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native'
+import { Animated, FlatList, RefreshControl, Alert, StyleSheet } from 'react-native'
 import styled from 'styled-components/native'
 import { Octicons } from '@expo/vector-icons'
 import { RectButton } from 'react-native-gesture-handler'
 import Swipeable from 'react-native-gesture-handler/Swipeable'
+import { Header, Item, Input, Icon } from 'native-base'
 
-import { patientsApi } from '../utils/api'
+import { patientsApi } from '../utils'
 import { Patient } from '../src/components'
 
 const PatientsListScreen = ({ navigation }) => {
 	const [data, setData] = useState(null)
+	const [searchValue, setSearchValue] = useState('')
 	const [refreshing, setRefreshing] = useState(false)
+	const ref = React.useRef(null)
+	const AnimatedFlatList = Animated.createAnimatedComponent(FlatList)
+	const [animatedValue, setAnimatedValue] = useState(new Animated.Value(0))
 
-	const fetchPatients = () => {
-		setRefreshing(true)
+	useFocusEffect(
+		React.useCallback(() => {
+			cleanFetch()
+		}, [])
+	)
+
+	useScrollToTop(ref)
+
+	const cleanFetch = () => {
 		patientsApi
 			.get()
 			.then(({ data }) => {
 				setData(data.message)
+			})
+			.catch((error) => {
+				error.request ? console.log(error.request) : console.log('Error', error.message)
+			})
+			.finally(() => {
 				setRefreshing(false)
 			})
-			.catch((e) => {
-				setRefreshing(false)
-				console.log(e)
-			})
+	}
+
+	const fetchPatients = () => {
+		setRefreshing(true)
+		cleanFetch()
 	}
 
 	useEffect(fetchPatients, [])
@@ -35,7 +54,6 @@ const PatientsListScreen = ({ navigation }) => {
 			[
 				{
 					text: 'Отмена',
-					onPress: () => console.log('Cancel'),
 					style: 'cancel',
 				},
 				{
@@ -60,7 +78,7 @@ const PatientsListScreen = ({ navigation }) => {
 
 		const pressHandler = () => {
 			if (text === 'pencil') {
-				alert('hey')
+				navigation.navigate('EditPatient')
 			} else {
 				removePatient(id)
 			}
@@ -92,22 +110,69 @@ const PatientsListScreen = ({ navigation }) => {
 		</RightButtonsHandler>
 	)
 
+	const onSearch = (e) => {
+		setSearchValue(e.nativeEvent.text)
+	}
+
+	let translateY = animatedValue.interpolate({
+		inputRange: [0, 44],
+		outputRange: [0, -60],
+		extrapolate: 'clamp',
+	})
+
 	return (
 		<Container>
-			<FlatList
-				style={{ paddingLeft: 20, paddingRight: 20 }}
-				data={data}
-				keyExtractor={(item) => item._id}
-				renderItem={({ item }) => (
-					<Swipeable
-						renderRightActions={(progress) => renderRightActions(progress, item._id)}
-						friction={2}
+			{data ? (
+				<>
+					<AnimatedFlatList
+						scrollToOverflowEnabled={true}
+						ref={ref}
+						style={{ paddingLeft: 20, paddingRight: 20 }}
+						contentContainerStyle={{ paddingTop: 55, flexGrow: 1 }}
+						scrollEventThrottle={16} // <-- Use 1 here to make sure no events are ever missed
+						onScroll={Animated.event(
+							[{ nativeEvent: { contentOffset: { y: animatedValue } } }],
+							{ useNativeDriver: true } // <-- Add this
+						)}
+						data={data.filter(
+							(item) => item.fullName.toLowerCase().indexOf(searchValue.toLowerCase()) >= 0
+						)}
+						keyExtractor={(item) => item._id}
+						renderItem={({ item }) => (
+							<Swipeable
+								renderRightActions={(progress) => renderRightActions(progress, item._id)}
+								friction={2}
+							>
+								<Patient navigation={navigation} item={item} />
+							</Swipeable>
+						)}
+						refreshControl={<RefreshControl refreshing={refreshing} onRefresh={cleanFetch} />}
+						ListEmptyComponent={
+							<ActionText style={{ color: 'red', padding: 0 }}>
+								Такой пациент не найден..
+							</ActionText>
+						}
+					/>
+					<Animated.View
+						style={[
+							{ position: 'absolute', height: 60, left: 0, right: 0 },
+							{ transform: [{ translateY }] },
+						]}
 					>
-						<Patient navigation={navigation} item={item} />
-					</Swipeable>
-				)}
-				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchPatients} />}
-			/>
+						<Header searchBar rounded style={{ paddingTop: 0, height: 61 }}>
+							<Item>
+								<Icon name='ios-search' />
+								<Input placeholder='Поиск...' clearButtonMode='always' onChange={onSearch} />
+								<Icon name='ios-people' />
+							</Item>
+						</Header>
+					</Animated.View>
+				</>
+			) : (
+				<ActionText style={{ color: 'red' }}>
+					Пожалуйста проверьте соединение с сервером...
+				</ActionText>
+			)}
 		</Container>
 	)
 }
@@ -128,6 +193,10 @@ const ActionText = styled.Text({
 	fontSize: 16,
 	backgroundColor: 'transparent',
 	padding: 10,
+})
+
+const styles = StyleSheet.create({
+	headerWrapper: {},
 })
 
 export default PatientsListScreen

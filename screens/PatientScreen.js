@@ -1,35 +1,53 @@
 import React, { useEffect, useState } from 'react'
-import { View, Platform, ActivityIndicator, Linking } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
+import { View, Platform, ActivityIndicator, FlatList, RefreshControl, Linking } from 'react-native'
 import styled from 'styled-components'
 import { Foundation, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons'
 
 import { GrayText, Button, Badge } from '../src/components'
-import { patientsApi } from '../utils/api'
+import { patientsApi, phoneFormat } from '../utils'
 
 const PatientScreen = ({ route, navigation }) => {
-	const { patientId, userName, userPhone } = route.params
-
+	const { patientId, userName, userPhone, userEmail } = route.params
 	const [appointments, setAppointments] = useState([])
 	const [isLoading, setIsLoading] = useState(true)
 
-	useEffect(() => {
+	useFocusEffect(
+		React.useCallback(() => {
+			fetchPatientsAppointments()
+		}, [])
+	)
+
+	const fetchPatientsAppointments = () => {
 		patientsApi
 			.show(patientId)
 			.then(({ data }) => {
 				setAppointments(data.data.appointments)
+			})
+			.catch((error) => {
+				error.request ? console.log(error.request) : console.log('Error', error.message)
+			})
+			.finally(() => {
 				setIsLoading(false)
 			})
-			.catch((e) => {
-				setIsLoading(false)
-				console.log(e)
-			})
-	}, [])
+	}
+
+	useEffect(fetchPatientsAppointments, [])
+
+	const EmailRow = () => {
+		if (userEmail) {
+			return <GrayText style={{ marginBottom: 20 }}>{userEmail}</GrayText>
+		} else {
+			return null
+		}
+	}
 
 	return (
 		<Container>
 			<View style={{ paddingLeft: 20, paddingRight: 20, paddingBottom: 30 }}>
 				<PatientFullName>{userName}</PatientFullName>
-				<GrayText style={{ marginBottom: 19 }}>{userPhone}</GrayText>
+				<GrayText style={{ marginBottom: 10 }}>{phoneFormat(userPhone)}</GrayText>
+				<EmailRow />
 				<ButtonsWrapper>
 					<Button>Формула зубов</Button>
 					<CallButton onPress={() => Linking.openURL('tel:+' + userPhone)}>
@@ -44,26 +62,28 @@ const PatientScreen = ({ route, navigation }) => {
 			</View>
 
 			<PatientAppointments>
-				<View style={{ paddingLeft: 20, paddingRight: 20 }}>
-					<GrayText
-						style={{
-							color: '#000',
-							fontSize: 18,
-							fontWeight: 'bold',
-							marginTop: 26,
-							marginBottom: 13,
-						}}
-					>
-						{appointments.length > 0
-							? 'Приемы'
-							: `У пациента ${userName} нет приемов, нажмите + для создания приема`}
-					</GrayText>
-					{isLoading ? (
-						<ActivityIndicator size='large' color='#2A86FF' />
-					) : (
-						appointments.map((appointment) => (
+				<GrayText
+					style={{
+						color: '#000',
+						fontSize: 18,
+						fontWeight: 'bold',
+						marginTop: 26,
+						marginBottom: 13,
+					}}
+				>
+					{appointments.length > 0
+						? `Приемы (${appointments.length})`
+						: `У пациента ${userName} нет приемов, нажмите + для создания приема`}
+				</GrayText>
+				{isLoading ? (
+					<ActivityIndicator size='large' color='#2A86FF' />
+				) : (
+					<FlatList
+						data={appointments}
+						keyExtractor={(item) => item._id}
+						renderItem={({ item }) => (
 							<AppointmentCard
-								key={appointment._id}
+								key={item._id}
 								style={{
 									shadowColor: 'gray',
 									shadowOffset: { width: 0, height: 0 },
@@ -83,7 +103,7 @@ const PatientScreen = ({ route, navigation }) => {
 								<AppointmentCardRow>
 									<Foundation style={{ marginRight: 10 }} name='wrench' size={20} color='#A3A3A3' />
 									<AppointmentCardLabel>
-										Зуб: <Bold>{appointment.dentNumber}</Bold>
+										Зуб: <Bold>{item.dentNumber}</Bold>
 									</AppointmentCardLabel>
 								</AppointmentCardRow>
 
@@ -95,33 +115,28 @@ const PatientScreen = ({ route, navigation }) => {
 										color='#A3A3A3'
 									/>
 									<AppointmentCardLabel>
-										Диагноз: <Bold>{appointment.diagnosis}</Bold>
+										Диагноз: <Bold>{item.diagnosis}</Bold>
 									</AppointmentCardLabel>
 								</AppointmentCardRow>
 
 								<AppointmentCardRow>
 									<ButtonsWrapper style={{ flex: 1 }}>
 										<Badge active>
-											{appointment.date} - {appointment.time}
+											{item.date} - {item.time}
 										</Badge>
 										<Badge color='green' style={{ fontWeight: 'bold' }}>
-											{appointment.price} с
+											{item.price} с
 										</Badge>
 									</ButtonsWrapper>
 								</AppointmentCardRow>
-
-								{/* <ButtonsWrapper>
-							<Button>22.04.2020 - 15:40</Button>
-							<PriceButton>
-								<GrayText style={{ color: '#61BB42', fontWeight: 'bold' }}>
-									1500 Р
-								</GrayText>
-							</PriceButton>
-						</ButtonsWrapper> */}
 							</AppointmentCard>
-						))
-					)}
-				</View>
+						)}
+						refreshControl={
+							<RefreshControl refreshing={isLoading} onRefresh={fetchPatientsAppointments} />
+						}
+						ListEmptyComponent={<ActionText></ActionText>}
+					/>
+				)}
 			</PatientAppointments>
 		</Container>
 	)
@@ -167,7 +182,12 @@ const AppointmentCard = styled.View({
 	marginBottom: 20,
 })
 
-const PatientAppointments = styled.View({ flex: 1, backgroundColor: '#f8fafd' })
+const PatientAppointments = styled.View({
+	flex: 1,
+	backgroundColor: '#f8fafd',
+	paddingLeft: 20,
+	paddingRight: 20,
+})
 
 const Container = styled.SafeAreaView({
 	flex: 1,
@@ -204,6 +224,13 @@ const CallButton = styled.TouchableOpacity({
 	height: '45px',
 	backgroundColor: '#84D269',
 	marginLeft: 10,
+})
+
+const ActionText = styled.Text({
+	color: 'red',
+	fontSize: 16,
+	backgroundColor: 'transparent',
+	padding: 10,
 })
 
 export default PatientScreen

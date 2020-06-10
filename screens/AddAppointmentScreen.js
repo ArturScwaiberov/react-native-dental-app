@@ -1,19 +1,19 @@
 import React, { useState } from 'react'
-import { Keyboard } from 'react-native'
+import { Keyboard, Platform, Alert } from 'react-native'
 import { Container, Content, Form, Item, Input, Label, Icon, Text, Button } from 'native-base'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import styled from 'styled-components/native'
+import { YellowBox } from 'react-native'
 
-import { appointmentsApi } from '../utils/api'
+import { appointmentsApi } from '../utils'
 
 const AddAppointmentScreen = ({ route, navigation }) => {
-	const [values, setValues] = useState({ patientId: route.params?.patientId._id ?? 'defaultValue' })
+	const [values, setValues] = useState({
+		patientId: route.params?.patientId ?? '',
+	})
 	const [date, setDate] = useState(new Date())
 	const [mode, setMode] = useState('date')
 	const [show, setShow] = useState(false)
-
-	console.log(values.patientId)
-	//I need to get patientId in this screen to create appointment to THIS user with its ID
 
 	const setFieldValue = (name, value) => {
 		setValues({
@@ -27,6 +27,14 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 		setFieldValue(name, text)
 	}
 
+	const fielsdName = {
+		dentNumber: 'Номер зуба',
+		diagnosis: 'Диагноз',
+		price: 'Цена',
+		date: 'Дата',
+		time: 'Время',
+	}
+
 	const submitHandler = () => {
 		appointmentsApi
 			.add(values)
@@ -34,7 +42,16 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 				navigation.navigate('Patient')
 			})
 			.catch((e) => {
-				alert(e)
+				if (e.response.data && e.response.data.message) {
+					Keyboard.dismiss()
+					e.response.data.message.forEach((err) => {
+						const fieldName = err.param
+						Alert.alert(
+							'Внимание',
+							`Поле "${fielsdName[fieldName]}" не заполнено или заполнено не верно.`
+						)
+					})
+				}
 			})
 		/* alert(JSON.stringify(values)) */
 	}
@@ -51,11 +68,15 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 		return [year, month, day].join('-')
 	}
 
+	const formatTime = (time) => {
+		return time.toTimeString().split(' ')[0].slice(0, 5)
+	}
+
 	const onChange = (event, selectedDate) => {
 		Keyboard.dismiss()
 		const currentDate = selectedDate || date
 		const date = formatDate(currentDate)
-		const time = currentDate.toTimeString().split(' ')[0].slice(0, 5)
+		const time = formatTime(currentDate)
 		setShow(Platform.OS === 'ios')
 		setDate(currentDate)
 		setValues({
@@ -79,7 +100,7 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 		<Container>
 			<Content style={{ paddingLeft: 20, paddingRight: 20 }}>
 				<Form>
-					<Item picker style={{ borderWidth: 0 }} /* floatingLabel */>
+					<Item picker /* floatingLabel */>
 						<Input
 							onChange={handleChange.bind(this, 'dentNumber')}
 							value={values.dentNumber}
@@ -116,11 +137,14 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 						/>
 					</Item>
 
-					<ButtonRN onPress={showDatepicker}>
-						<Text style={{ fontSize: 18, fontWeight: '400' }}>
-							Дата: {formatDate(date)}, время: {date.toTimeString().split(' ')[0].slice(0, 5)}
-						</Text>
-					</ButtonRN>
+					<Item picker>
+						<ButtonRN onPress={showDatepicker}>
+							<Text style={{ fontSize: 17, fontWeight: '400' }}>
+								* Дата:{values.date ? ' ' + formatDate(date) : ' гггг-мм-дд'} время:
+								{values.time ? ' ' + formatTime(date) : ' чч:мм'}
+							</Text>
+						</ButtonRN>
+					</Item>
 
 					{show && (
 						<DateTimePicker
@@ -159,6 +183,7 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 
 const ButtonRN = styled.TouchableOpacity({
 	paddingTop: 15,
+	paddingBottom: 15,
 	paddingLeft: 5,
 })
 

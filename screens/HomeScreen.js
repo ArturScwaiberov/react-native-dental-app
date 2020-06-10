@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useFocusEffect, useScrollToTop } from '@react-navigation/native'
 import { Animated, SectionList, RefreshControl, Alert } from 'react-native'
 import styled from 'styled-components/native'
 import { Octicons } from '@expo/vector-icons'
@@ -8,22 +9,36 @@ import Swipeable from 'react-native-gesture-handler/Swipeable'
 import { appointmentsApi } from '../utils/api'
 import { Appointment, SectionTitle } from '../src/components'
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, route }) => {
 	const [data, setData] = useState(null)
 	const [refreshing, setRefreshing] = useState(false)
+	const ref = React.useRef(null)
 
-	const fetchAppointments = () => {
-		setRefreshing(true)
+	useFocusEffect(
+		React.useCallback(() => {
+			cleanFetch()
+		}, [])
+	)
+
+	useScrollToTop(ref)
+
+	const cleanFetch = () => {
 		appointmentsApi
 			.get()
 			.then(({ data }) => {
 				setData(data.message)
+			})
+			.catch((error) => {
+				error.request ? console.log(error.request) : console.log('Error', error.message)
+			})
+			.finally(() => {
 				setRefreshing(false)
 			})
-			.catch((e) => {
-				setRefreshing(false)
-				console.log(e)
-			})
+	}
+
+	const fetchAppointments = () => {
+		setRefreshing(true)
+		cleanFetch()
 	}
 
 	useEffect(fetchAppointments, [])
@@ -35,7 +50,6 @@ const HomeScreen = ({ navigation }) => {
 			[
 				{
 					text: 'Отмена',
-					onPress: () => console.log('Cancel'),
 					style: 'cancel',
 				},
 				{
@@ -47,7 +61,7 @@ const HomeScreen = ({ navigation }) => {
 							return group
 						})
 						setData(result)
-						//appointmentsApi.remove(id)
+						appointmentsApi.remove(id)
 					},
 					style: 'default',
 				},
@@ -99,22 +113,29 @@ const HomeScreen = ({ navigation }) => {
 	return (
 		<Container>
 			<SectionList
+				ref={ref}
 				style={{ paddingLeft: 20, paddingRight: 20 }}
 				sections={data}
 				keyExtractor={(item) => item._id}
-				renderItem={({ item }) => (
+				renderItem={({ item, index }) => (
 					<Swipeable
 						renderRightActions={(progress) => renderRightActions(progress, item._id)}
 						friction={2}
 					>
-						<Appointment navigation={navigation} item={item} />
+						<Appointment navigation={navigation} item={item} index={index} />
 					</Swipeable>
 				)}
 				renderSectionHeader={({ section }) =>
 					section.data.length > 0 ? <SectionTitle>{section.title}</SectionTitle> : null
 				}
 				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAppointments} />}
+				ListEmptyComponent={
+					<ActionText style={{ color: 'red' }}>
+						Пожалуйста проверьте соединение с сервером...
+					</ActionText>
+				}
 			/>
+
 			{/* убрал круглую кнопку, удалил импорт данной кнопки из компонентов
 			<PlusButton onPress={() => navigation.navigate('AddPatient')} /> */}
 		</Container>

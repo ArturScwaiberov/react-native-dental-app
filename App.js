@@ -1,8 +1,14 @@
 import React from 'react'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, useNavigation } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 //import { Button } from 'react-native'
+
+// 		TODO - сделать редактирование пациентов и приемов,
+// сделать попап для приема в карте пациента
+// 				сделать формулу зубов
+// выделять ближайший прием в списке приемов
+// 				если прием завершен, то подсвечивать зуб
 
 import {
 	HomeScreen,
@@ -10,15 +16,18 @@ import {
 	AddPatientScreen,
 	PatientsListScreen,
 	AddAppointmentScreen,
+	EditPatientScreen,
 } from './screens'
 import { View, Text, Button, Icon } from 'native-base'
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
 
-const HeaderRight = ({ navigation, target }) => {
+const HeaderRight = ({ patientId, target }) => {
+	const navigation = useNavigation()
+
 	return (
-		<Button transparent onPress={() => navigation.navigate(target)}>
+		<Button transparent onPress={() => navigation.navigate(target, { patientId })}>
 			<Icon name='plus' type='Entypo' style={{ fontSize: 26 }} />
 		</Button>
 	)
@@ -60,9 +69,9 @@ function Appointments({ navigation }) {
 
 function Patients({ route, navigation }) {
 	return (
-		<Stack.Navigator initialRouteName='Home'>
+		<Stack.Navigator initialRouteName='PatientsList'>
 			<Stack.Screen
-				name='Home'
+				name='PatientsList'
 				component={PatientsListScreen}
 				options={{
 					title: 'Пациенты',
@@ -72,22 +81,26 @@ function Patients({ route, navigation }) {
 						fontWeight: 'bold',
 						fontSize: 28,
 					},
-					headerRight: () => <HeaderRight navigation={navigation} target={'AddPatient'} />,
+					headerRight: () => <HeaderRight target={'AddPatient'} />,
 				}}
 			/>
 			<Stack.Screen
 				name='Patient'
 				component={PatientScreen}
-				options={{
-					title: 'Карта пациента',
-					headerTintColor: '#2A86FF',
-					headerTitleAlign: 'center',
-					headerTitleStyle: {
-						fontWeight: 'bold',
-						fontSize: 20,
-					},
-					headerBackTitleVisible: false,
-					headerRight: () => <HeaderRight navigation={navigation} target={'AddAppointment'} />,
+				options={({ route, navigation }) => {
+					return {
+						title: 'Карта пациента',
+						headerTintColor: '#2A86FF',
+						headerTitleAlign: 'center',
+						headerTitleStyle: {
+							fontWeight: 'bold',
+							fontSize: 20,
+						},
+						headerBackTitleVisible: false,
+						headerRight: () => (
+							<HeaderRight target={'AddAppointment'} patientId={route.params.patientId} />
+						),
+					}
 				}}
 			/>
 			<Stack.Screen
@@ -109,6 +122,20 @@ function Patients({ route, navigation }) {
 				component={AddAppointmentScreen}
 				options={{
 					title: 'Добавить прием',
+					headerTintColor: '#2A86FF',
+					headerTitleAlign: 'center',
+					headerTitleStyle: {
+						fontWeight: 'bold',
+						fontSize: 20,
+					},
+					headerBackTitleVisible: false,
+				}}
+			/>
+			<Stack.Screen
+				name='EditPatient'
+				component={EditPatientScreen}
+				options={{
+					title: 'Редактировать пацента',
 					headerTintColor: '#2A86FF',
 					headerTitleAlign: 'center',
 					headerTitleStyle: {

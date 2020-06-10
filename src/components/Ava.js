@@ -1,13 +1,13 @@
 import React from 'react'
 import styled from 'styled-components/native'
-import getAvatartColor from '../../utils/getAvatartColor'
+import {getAvatarColor} from '../../utils'
 
 const Ava = ({ item }) => {
 	if (item.avatar) {
 		return <Avatar source={{ uri: item.avatar }} />
 	} else {
 		const firstLetter = item.fullName[0].toUpperCase()
-		const avatarColors = getAvatartColor(firstLetter)
+		const avatarColors = getAvatarColor(firstLetter)
 		return (
 			<FirstLetterHandler style={{ backgroundColor: avatarColors.background }}>
 				<FirstLetter style={{ color: avatarColors.color }}>{firstLetter}</FirstLetter>
