@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { View, Platform, ActivityIndicator, FlatList, RefreshControl, Linking } from 'react-native'
+import { Animated, Platform, ActivityIndicator, RefreshControl, Linking, Alert } from 'react-native'
 import styled from 'styled-components'
 import { Foundation, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons'
 
@@ -8,9 +8,11 @@ import { GrayText, Button, Badge } from '../src/components'
 import { patientsApi, phoneFormat } from '../utils'
 
 const PatientScreen = ({ route, navigation }) => {
-	const { patientId, userName, userPhone, userEmail } = route.params
+	const { patientId, userName, userPhone, userEmail, description } = route.params
 	const [appointments, setAppointments] = useState([])
 	const [isLoading, setIsLoading] = useState(true)
+	const [animatedValue, setAnimatedValue] = useState(new Animated.Value(0))
+	const AnimatedGrayText = Animated.createAnimatedComponent(GrayText)
 
 	useFocusEffect(
 		React.useCallback(() => {
@@ -42,14 +44,58 @@ const PatientScreen = ({ route, navigation }) => {
 		}
 	}
 
+	const HEADER_HEIGHT = userEmail ? 204 : 165
+	const TITLE_HEIGHT = HEADER_HEIGHT + 30
+
+	let translateY = animatedValue.interpolate({
+		inputRange: [0, HEADER_HEIGHT * 0.7],
+		outputRange: [0, -HEADER_HEIGHT],
+		extrapolate: 'clamp',
+	})
+
+	let translateYN = animatedValue.interpolate({
+		inputRange: [0, HEADER_HEIGHT * 0.7],
+		outputRange: [0, -HEADER_HEIGHT + 30],
+		extrapolate: 'clamp',
+	})
+
+	const pressHandler = () => {
+		navigation.navigate('ToothFormula', appointments)
+	}
+
+	const createOneButtonAlert = (description) => {
+		Alert.alert(
+			'Подробное описание',
+			description ? description : 'не было добавлено..',
+			[{ text: 'OK' }],
+			{ cancelable: true }
+		)
+	}
+
 	return (
 		<Container>
-			<View style={{ paddingLeft: 20, paddingRight: 20, paddingBottom: 30 }}>
+			<Animated.View
+				style={[
+					{
+						position: 'absolute',
+						left: 0,
+						right: 0,
+						top: 0,
+						height: HEADER_HEIGHT,
+						zIndex: 1000,
+						paddingLeft: 20,
+						paddingRight: 20,
+					},
+					{
+						transform: [{ translateY }],
+					},
+				]}
+			>
 				<PatientFullName>{userName}</PatientFullName>
 				<GrayText style={{ marginBottom: 10 }}>{phoneFormat(userPhone)}</GrayText>
 				<EmailRow />
 				<ButtonsWrapper>
-					<Button>Формула зубов</Button>
+					<Button onPress={pressHandler}>Формула зубов</Button>
 					<CallButton onPress={() => Linking.openURL('tel:+' + userPhone)}>
 						<Foundation
 							style={{ marginTop: Platform.OS === 'ios' ? 2 : 0 }}
@@ -59,28 +105,52 @@ const PatientScreen = ({ route, navigation }) => {
 						/>
 					</CallButton>
 				</ButtonsWrapper>
-			</View>
+			</Animated.View>
 
 			<PatientAppointments>
-				<GrayText
-					style={{
-						color: '#000',
-						fontSize: 18,
-						fontWeight: 'bold',
-						marginTop: 26,
-						marginBottom: 13,
-					}}
+				<AnimatedGrayText
+					style={[
+						{
+							position: 'absolute',
+							left: 0,
+							right: 0,
+							top: HEADER_HEIGHT - 40,
+							backgroundColor: '#f8fafd',
+							zIndex: 1000,
+							marginLeft: 20,
+							marginRight: 20,
+							paddingTop: 28,
+							paddingBottom: 16,
+							color: '#000',
+							fontSize: 20,
+							fontWeight: 'bold',
+						},
+						{
+							transform: [{ translateY: translateYN }],
+						},
+					]}
 				>
 					{appointments.length > 0
 						? `Приемы (${appointments.length})`
 						: `У пациента ${userName} нет приемов, нажмите + для создания приема`}
-				</GrayText>
+				</AnimatedGrayText>
 				{isLoading ? (
-					<ActivityIndicator size='large' color='#2A86FF' />
+					<ActivityIndicator size='small' />
 				) : (
-					<FlatList
+					<Animated.FlatList
 						data={appointments}
 						keyExtractor={(item) => item._id}
+						scrollEventThrottle={16} // <-- Use 1 here to make sure no events are ever missed
+						onScroll={Animated.event(
+							[{ nativeEvent: { contentOffset: { y: animatedValue } } }],
+							{ useNativeDriver: true } // <-- Add this
+						)}
+						style={{
+							paddingTop: TITLE_HEIGHT,
+							paddingRight: 20,
+							paddingLeft: 20,
+						}}
+						contentContainerStyle={{ paddingBottom: TITLE_HEIGHT, flexGrow: 1 }}
 						renderItem={({ item }) => (
 							<AppointmentCard
 								key={item._id}
@@ -92,12 +162,12 @@ const PatientScreen = ({ route, navigation }) => {
 									elevation: 1,
 								}}
 							>
-								<MoreButton onPress={() => alert(userName)}>
+								<MoreButton onPress={() => createOneButtonAlert(item.description)}>
 									<Ionicons
 										name='md-more'
 										size={34}
 										color='#A3A3A3'
-										onPress={() => alert(userName)}
+										onPress={() => createOneButtonAlert(item.description)}
 									/>
 								</MoreButton>
 								<AppointmentCardRow>
@@ -121,7 +191,7 @@ const PatientScreen = ({ route, navigation }) => {
 
 								<AppointmentCardRow>
 									<ButtonsWrapper style={{ flex: 1 }}>
-										<Badge active>
+										<Badge>
 											{item.date} - {item.time}
 										</Badge>
 										<Badge color='green' style={{ fontWeight: 'bold' }}>
@@ -185,8 +255,6 @@ const AppointmentCard = styled.View({
 const PatientAppointments = styled.View({
 	flex: 1,
 	backgroundColor: '#f8fafd',
-	paddingLeft: 20,
-	paddingRight: 20,
 })
 
 const Container = styled.SafeAreaView({

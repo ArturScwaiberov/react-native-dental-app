@@ -14,9 +14,17 @@ import {
 import styled from 'styled-components/native'
 
 import { patientsApi } from '../utils'
+import { Keyboard, Alert } from 'react-native'
 
-const EditPatientScreen = ({ navigation }) => {
-	const [values, setValues] = useState({})
+const EditPatientScreen = ({ navigation, route }) => {
+	const { patientId } = route.params
+	const [values, setValues] = useState({
+		avatar: patientId.avatar,
+		fullName: patientId.fullName,
+		phone: patientId.phone,
+		gender: patientId.gender,
+		email: patientId.email,
+	})
 
 	const setFieldValue = (name, value) => {
 		setValues({
@@ -30,14 +38,28 @@ const EditPatientScreen = ({ navigation }) => {
 		setFieldValue(name, text)
 	}
 
+	const fieldsName = {
+		fullName: '"имя"',
+		phone: '"телефон"',
+		gender: '"пол"',
+		email: '"почта"',
+	}
+
 	const submitHandler = () => {
 		patientsApi
-			.add(values)
+			.update(patientId._id, values)
 			.then(() => {
 				navigation.navigate('PatientsList')
 			})
 			.catch((e) => {
-				alert(e)
+				if (e.response.data && e.response.data.message) {
+					Keyboard.dismiss()
+					e.response.data.message.forEach((err) => {
+						const fieldErr = err.msg
+						const fieldName = err.param
+						Alert.alert(`Поле ${fieldsName[fieldName]}`, fieldErr)
+					})
+				}
 			})
 		/* alert(JSON.stringify(values)) */
 	}
@@ -46,15 +68,14 @@ const EditPatientScreen = ({ navigation }) => {
 		<Container>
 			<Content style={{ paddingLeft: 20, paddingRight: 20 }}>
 				<Form>
-					<Item picker style={{ borderWidth: 0 }} /* floatingLabel */>
-						{/* <Label>Аватар</Label> */}
+					{/* <Item picker style={{ borderWidth: 0 }} >
 						<Input
 							onChange={handleInputChange.bind(this, 'avatar')}
 							value={values.avatar}
 							clearButtonMode='while-editing'
 							placeholder='Аватар'
 						/>
-					</Item>
+					</Item> */}
 					<Item picker>
 						<Input
 							onChange={handleInputChange.bind(this, 'fullName')}
@@ -105,10 +126,10 @@ const EditPatientScreen = ({ navigation }) => {
 							rounded
 							block
 							iconLeft
-							style={{ backgroundColor: '#84D269' }}
+							style={{ backgroundColor: '#2A86FF' }}
 						>
-							<Icon type='Entypo' name='plus' style={{ color: '#fff' }} />
-							<Text style={{ color: '#fff' }}>Добавить пациента</Text>
+							<Icon type='Entypo' name='check' style={{ color: '#fff' }} />
+							<Text style={{ color: '#fff' }}>Сохранить</Text>
 						</Button>
 					</ButtonView>
 					<Label style={{ marginTop: 20, fontSize: 16 }}>

@@ -14,6 +14,7 @@ import {
 import styled from 'styled-components/native'
 
 import { patientsApi } from '../utils'
+import { Alert, Keyboard } from 'react-native'
 
 const AddPatientScreen = ({ navigation }) => {
 	const [values, setValues] = useState({})
@@ -30,6 +31,13 @@ const AddPatientScreen = ({ navigation }) => {
 		setFieldValue(name, text)
 	}
 
+	const fieldsName = {
+		fullName: '"имя"',
+		phone: '"телефон"',
+		gender: '"пол"',
+		email: '"почта"',
+	}
+
 	const submitHandler = () => {
 		patientsApi
 			.add(values)
@@ -37,7 +45,14 @@ const AddPatientScreen = ({ navigation }) => {
 				navigation.navigate('PatientsList')
 			})
 			.catch((e) => {
-				alert(e)
+				if (e.response.data && e.response.data.message) {
+					Keyboard.dismiss()
+					e.response.data.message.forEach((err) => {
+						const fieldErr = err.msg
+						const fieldName = err.param
+						Alert.alert(`Поле ${fieldsName[fieldName]}`, fieldErr)
+					})
+				}
 			})
 		/* alert(JSON.stringify(values)) */
 	}
@@ -46,15 +61,15 @@ const AddPatientScreen = ({ navigation }) => {
 		<Container>
 			<Content style={{ paddingLeft: 20, paddingRight: 20 }}>
 				<Form>
-					<Item picker style={{ borderWidth: 0 }} /* floatingLabel */>
-						{/* <Label>Аватар</Label> */}
+					{/* <Item picker style={{ borderWidth: 0 }} > // убрал floatingLabel
+						<Label>Аватар</Label> // убрал
 						<Input
 							onChange={handleInputChange.bind(this, 'avatar')}
 							value={values.avatar}
 							clearButtonMode='while-editing'
 							placeholder='Аватар'
 						/>
-					</Item>
+					</Item> */}
 					<Item picker>
 						<Input
 							onChange={handleInputChange.bind(this, 'fullName')}

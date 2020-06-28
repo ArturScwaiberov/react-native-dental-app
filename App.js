@@ -4,10 +4,8 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 //import { Button } from 'react-native'
 
-// 		TODO - сделать редактирование пациентов и приемов,
 // сделать попап для приема в карте пациента
 // 				сделать формулу зубов
-// выделять ближайший прием в списке приемов
 // 				если прием завершен, то подсвечивать зуб
 
 import {
@@ -17,6 +15,8 @@ import {
 	PatientsListScreen,
 	AddAppointmentScreen,
 	EditPatientScreen,
+	EditAppointmentScreen,
+	ToothFormulaScreen,
 } from './screens'
 import { View, Text, Button, Icon } from 'native-base'
 
@@ -33,7 +33,7 @@ const HeaderRight = ({ patientId, target }) => {
 	)
 }
 
-function Appointments({ navigation }) {
+function Appointments({ route, navigation }) {
 	return (
 		<Stack.Navigator initialRouteName='Home'>
 			<Stack.Screen
@@ -54,6 +54,34 @@ function Appointments({ navigation }) {
 				component={PatientScreen}
 				options={{
 					title: 'Карта пациента',
+					headerTintColor: '#2A86FF',
+					headerTitleAlign: 'center',
+					headerTitleStyle: {
+						fontWeight: 'bold',
+						fontSize: 20,
+					},
+					headerBackTitleVisible: false,
+				}}
+			/>
+			<Stack.Screen
+				name='ToothFormula'
+				component={ToothFormulaScreen}
+				options={{
+					title: 'Формула зубов',
+					headerTintColor: '#2A86FF',
+					headerTitleAlign: 'center',
+					headerTitleStyle: {
+						fontWeight: 'bold',
+						fontSize: 20,
+					},
+					headerBackTitleVisible: false,
+				}}
+			/>
+			<Stack.Screen
+				name='EditAppointment'
+				component={EditAppointmentScreen}
+				options={{
+					title: 'Редактировать прием',
 					headerTintColor: '#2A86FF',
 					headerTitleAlign: 'center',
 					headerTitleStyle: {
@@ -101,6 +129,20 @@ function Patients({ route, navigation }) {
 							<HeaderRight target={'AddAppointment'} patientId={route.params.patientId} />
 						),
 					}
+				}}
+			/>
+			<Stack.Screen
+				name='ToothFormula'
+				component={ToothFormulaScreen}
+				options={{
+					title: 'Формула зубов',
+					headerTintColor: '#2A86FF',
+					headerTitleAlign: 'center',
+					headerTitleStyle: {
+						fontWeight: 'bold',
+						fontSize: 20,
+					},
+					headerBackTitleVisible: false,
 				}}
 			/>
 			<Stack.Screen

@@ -1,9 +1,9 @@
 import React from 'react'
 import styled from 'styled-components'
 
-const Button = ({ children, color }) => {
+const Button = ({ children, color, onPress }) => {
 	return (
-		<FormulaButton color={color}>
+		<FormulaButton color={color} onPress={onPress}>
 			<FormulaButtonText>{children}</FormulaButtonText>
 		</FormulaButton>
 	)

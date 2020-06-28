@@ -6,9 +6,16 @@ import styled from 'styled-components/native'
 
 import { appointmentsApi } from '../utils'
 
-const AddAppointmentScreen = ({ route, navigation }) => {
+const EditAppointmentScreen = ({ route, navigation }) => {
+	const { patientId } = route.params
 	const [values, setValues] = useState({
-		patientId: route.params?.patientId ?? '',
+		patientId: patientId._id,
+		dentNumber: patientId.dentNumber,
+		diagnosis: patientId.diagnosis,
+		description: patientId.description,
+		price: patientId.price,
+		date: patientId.date,
+		time: patientId.time,
 	})
 	const [date, setDate] = useState(new Date())
 	const [mode, setMode] = useState('date')
@@ -36,9 +43,9 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 
 	const submitHandler = () => {
 		appointmentsApi
-			.add(values)
+			.update(patientId._id, values)
 			.then(() => {
-				navigation.navigate('Patient')
+				navigation.navigate('Home')
 			})
 			.catch((e) => {
 				if (e.response.data && e.response.data.message) {
@@ -100,7 +107,7 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 					<Item picker /* floatingLabel */>
 						<Input
 							onChange={handleChange.bind(this, 'dentNumber')}
-							value={values.dentNumber}
+							value={values.dentNumber.toString()}
 							keyboardType='number-pad'
 							clearButtonMode='while-editing'
 							placeholder='* Номер зуба'
@@ -127,7 +134,7 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 					<Item picker>
 						<Input
 							onChange={handleChange.bind(this, 'price')}
-							value={values.price}
+							value={values.price.toString()}
 							keyboardType='number-pad'
 							clearButtonMode='while-editing'
 							placeholder='* Цена'
@@ -137,8 +144,8 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 					<Item picker>
 						<ButtonRN onPress={showDatepicker}>
 							<Text style={{ fontSize: 17, fontWeight: '400' }}>
-								* Дата:{values.date ? ' ' + formatDate(date) : ' гггг-мм-дд'} время:
-								{values.time ? ' ' + formatTime(date) : ' чч:мм'}
+								* Дата:{values.date ? ' ' + values.date : ' гггг-мм-дд'} время:
+								{values.time ? ' ' + values.time : ' чч:мм'}
 							</Text>
 						</ButtonRN>
 					</Item>
@@ -163,10 +170,10 @@ const AddAppointmentScreen = ({ route, navigation }) => {
 							rounded
 							block
 							iconLeft
-							style={{ backgroundColor: '#84D269' }}
+							style={{ backgroundColor: '#2A86FF' }}
 						>
-							<Icon type='Entypo' name='plus' style={{ color: '#fff' }} />
-							<Text style={{ color: '#fff' }}>Добавить прием</Text>
+							<Icon type='Entypo' name='check' style={{ color: '#fff' }} />
+							<Text style={{ color: '#fff' }}>Сохранить</Text>
 						</Button>
 					</ButtonView>
 					<Label style={{ marginTop: 10, fontSize: 16 }}>
@@ -192,4 +199,4 @@ const TomatoText = styled.Text({
 	color: 'tomato',
 })
 
-export default AddAppointmentScreen
+export default EditAppointmentScreen

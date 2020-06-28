@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useFocusEffect, useScrollToTop } from '@react-navigation/native'
-import { Animated, FlatList, RefreshControl, Alert, StyleSheet } from 'react-native'
+import { Animated, RefreshControl, Alert } from 'react-native'
 import styled from 'styled-components/native'
 import { Octicons } from '@expo/vector-icons'
 import { RectButton } from 'react-native-gesture-handler'
@@ -14,9 +14,10 @@ const PatientsListScreen = ({ navigation }) => {
 	const [data, setData] = useState(null)
 	const [searchValue, setSearchValue] = useState('')
 	const [refreshing, setRefreshing] = useState(false)
-	const ref = React.useRef(null)
-	const AnimatedFlatList = Animated.createAnimatedComponent(FlatList)
 	const [animatedValue, setAnimatedValue] = useState(new Animated.Value(0))
+	const [refsArray, setRefsArray] = useState([])
+	const [noConnection, setNoConnection] = useState(false)
+	const ref = React.useRef(null)
 
 	useFocusEffect(
 		React.useCallback(() => {
@@ -31,9 +32,11 @@ const PatientsListScreen = ({ navigation }) => {
 			.get()
 			.then(({ data }) => {
 				setData(data.message)
+				setNoConnection(false)
 			})
 			.catch((error) => {
-				error.request ? console.log(error.request) : console.log('Error', error.message)
+				/* error.request ? setNoConnection(true) : console.log('Error', error.message) */
+				setNoConnection(true)
 			})
 			.finally(() => {
 				setRefreshing(false)
@@ -47,18 +50,22 @@ const PatientsListScreen = ({ navigation }) => {
 
 	useEffect(fetchPatients, [])
 
-	const removePatient = (id) => {
+	const removePatient = (id, closeRow) => {
 		Alert.alert(
 			'Удаление пациента',
 			'Вы действительно хотите удалить пациента и его приемы?',
 			[
 				{
 					text: 'Отмена',
+					onPress: () => {
+						closeRow()
+					},
 					style: 'cancel',
 				},
 				{
 					text: 'Да, удалить',
 					onPress: () => {
+						closeRow()
 						const result = data.filter((item) => item._id !== id)
 						setData(result)
 						patientsApi.remove(id)
@@ -70,17 +77,22 @@ const PatientsListScreen = ({ navigation }) => {
 		)
 	}
 
-	renderRightAction = (text, color, x, progress, id) => {
+	renderRightAction = (text, color, x, progress, id, item, index) => {
 		const trans = progress.interpolate({
 			inputRange: [0, 1],
 			outputRange: [x, 0],
 		})
 
+		const closeRow = () => {
+			refsArray[index].close()
+		}
+
 		const pressHandler = () => {
 			if (text === 'pencil') {
-				navigation.navigate('EditPatient')
+				closeRow()
+				navigation.navigate('EditPatient', { patientId: item })
 			} else {
-				removePatient(id)
+				removePatient(id, closeRow)
 			}
 		}
 
@@ -103,10 +115,10 @@ const PatientsListScreen = ({ navigation }) => {
 		)
 	}
 
-	renderRightActions = (progress, id) => (
+	renderRightActions = (progress, id, item, index) => (
 		<RightButtonsHandler>
-			{renderRightAction('pencil', '#B4C1CB', 160, progress, id)}
-			{renderRightAction('trashcan', '#F85A5A', 80, progress, id)}
+			{renderRightAction('pencil', '#B4C1CB', 160, progress, id, item, index)}
+			{renderRightAction('trashcan', '#F85A5A', 80, progress, id, item, index)}
 		</RightButtonsHandler>
 	)
 
@@ -114,65 +126,75 @@ const PatientsListScreen = ({ navigation }) => {
 		setSearchValue(e.nativeEvent.text)
 	}
 
+	const HEADER_HEIGHT = 60
+
 	let translateY = animatedValue.interpolate({
-		inputRange: [0, 44],
-		outputRange: [0, -60],
+		inputRange: [0, HEADER_HEIGHT * 0.7],
+		outputRange: [0, -HEADER_HEIGHT],
 		extrapolate: 'clamp',
 	})
 
+	const listEmptyComponent = () => {
+		return noConnection === false ? (
+			<ActionText style={{ color: '#816CFF', padding: 0 }}>
+				Ни одного пациента не найдено... 💁‍♀️
+			</ActionText>
+		) : (
+			<ActionText style={{ color: '#F38181' }}>
+				Пожалуйста проверьте соединение с сервером... ⚙️
+			</ActionText>
+		)
+	}
+
 	return (
 		<Container>
-			{data ? (
-				<>
-					<AnimatedFlatList
-						scrollToOverflowEnabled={true}
-						ref={ref}
-						style={{ paddingLeft: 20, paddingRight: 20 }}
-						contentContainerStyle={{ paddingTop: 55, flexGrow: 1 }}
-						scrollEventThrottle={16} // <-- Use 1 here to make sure no events are ever missed
-						onScroll={Animated.event(
-							[{ nativeEvent: { contentOffset: { y: animatedValue } } }],
-							{ useNativeDriver: true } // <-- Add this
-						)}
-						data={data.filter(
-							(item) => item.fullName.toLowerCase().indexOf(searchValue.toLowerCase()) >= 0
-						)}
-						keyExtractor={(item) => item._id}
-						renderItem={({ item }) => (
-							<Swipeable
-								renderRightActions={(progress) => renderRightActions(progress, item._id)}
-								friction={2}
-							>
-								<Patient navigation={navigation} item={item} />
-							</Swipeable>
-						)}
-						refreshControl={<RefreshControl refreshing={refreshing} onRefresh={cleanFetch} />}
-						ListEmptyComponent={
-							<ActionText style={{ color: 'red', padding: 0 }}>
-								Такой пациент не найден..
-							</ActionText>
-						}
-					/>
-					<Animated.View
-						style={[
-							{ position: 'absolute', height: 60, left: 0, right: 0 },
-							{ transform: [{ translateY }] },
-						]}
+			<Animated.FlatList
+				scrollToOverflowEnabled={true}
+				ref={ref}
+				style={{ paddingLeft: 20, paddingRight: 20 }}
+				contentContainerStyle={{ paddingTop: HEADER_HEIGHT, flexGrow: 1 }}
+				scrollEventThrottle={16} // <-- Use 1 here to make sure no events are ever missed
+				onScroll={Animated.event(
+					[{ nativeEvent: { contentOffset: { y: animatedValue } } }],
+					{ useNativeDriver: true } // <-- Add this
+				)}
+				data={
+					data
+						? data.filter(
+								(item) => item.fullName.toLowerCase().indexOf(searchValue.toLowerCase()) >= 0
+						  )
+						: null
+				}
+				keyExtractor={(item) => item._id}
+				renderItem={({ item, index }) => (
+					<Swipeable
+						ref={(ref) => {
+							refsArray[index] = ref
+						}}
+						renderRightActions={(progress) => renderRightActions(progress, item._id, item, index)}
+						index={index}
+						friction={2}
 					>
-						<Header searchBar rounded style={{ paddingTop: 0, height: 61 }}>
-							<Item>
-								<Icon name='ios-search' />
-								<Input placeholder='Поиск...' clearButtonMode='always' onChange={onSearch} />
-								<Icon name='ios-people' />
-							</Item>
-						</Header>
-					</Animated.View>
-				</>
-			) : (
-				<ActionText style={{ color: 'red' }}>
-					Пожалуйста проверьте соединение с сервером...
-				</ActionText>
-			)}
+						<Patient navigation={navigation} item={item} />
+					</Swipeable>
+				)}
+				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchPatients} />}
+				ListEmptyComponent={() => listEmptyComponent()}
+			/>
+			<Animated.View
+				style={[
+					{ position: 'absolute', height: HEADER_HEIGHT, left: 0, right: 0 },
+					{ transform: [{ translateY }] },
+				]}
+			>
+				<Header searchBar rounded style={{ paddingTop: 0, height: HEADER_HEIGHT + 1 }}>
+					<Item>
+						<Icon name='ios-search' />
+						<Input placeholder='Поиск...' clearButtonMode='always' onChange={onSearch} />
+						<Icon name='ios-people' />
+					</Item>
+				</Header>
+			</Animated.View>
 		</Container>
 	)
 }
@@ -193,10 +215,6 @@ const ActionText = styled.Text({
 	fontSize: 16,
 	backgroundColor: 'transparent',
 	padding: 10,
-})
-
-const styles = StyleSheet.create({
-	headerWrapper: {},
 })
 
 export default PatientsListScreen

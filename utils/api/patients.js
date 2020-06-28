@@ -5,4 +5,5 @@ export default {
 	add: (values) => axios.post('/patients', values),
 	show: (id) => axios.get('/patients/show/' + id),
 	remove: (id) => axios.delete('patients/remove/' + id),
+	update: (id, values) => axios.patch('patients/update/' + id, values),
 }

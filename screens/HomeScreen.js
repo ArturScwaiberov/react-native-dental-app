@@ -12,6 +12,8 @@ import { Appointment, SectionTitle } from '../src/components'
 const HomeScreen = ({ navigation, route }) => {
 	const [data, setData] = useState(null)
 	const [refreshing, setRefreshing] = useState(false)
+	const [refsArray, setRefsArray] = useState([])
+	const [noConnection, setNoConnection] = useState(false)
 	const ref = React.useRef(null)
 
 	useFocusEffect(
@@ -26,10 +28,12 @@ const HomeScreen = ({ navigation, route }) => {
 		appointmentsApi
 			.get()
 			.then(({ data }) => {
-				setData(data.message)
+				setData(data.message.sort())
+				setNoConnection(false)
 			})
 			.catch((error) => {
-				error.request ? console.log(error.request) : console.log('Error', error.message)
+				/* error.request ? console.log(error.request) : console.log('Error', error.message) */
+				setNoConnection(true)
 			})
 			.finally(() => {
 				setRefreshing(false)
@@ -43,13 +47,16 @@ const HomeScreen = ({ navigation, route }) => {
 
 	useEffect(fetchAppointments, [])
 
-	const removeAppointment = (id) => {
+	const removeAppointment = (id, closeRaw) => {
 		Alert.alert(
 			'Удаление приема',
 			'Вы действительно хотите удалить прием?',
 			[
 				{
 					text: 'Отмена',
+					onPress: () => {
+						closeRaw()
+					},
 					style: 'cancel',
 				},
 				{
@@ -60,6 +67,7 @@ const HomeScreen = ({ navigation, route }) => {
 							group.data = data
 							return group
 						})
+						closeRaw()
 						setData(result)
 						appointmentsApi.remove(id)
 					},
@@ -70,17 +78,22 @@ const HomeScreen = ({ navigation, route }) => {
 		)
 	}
 
-	renderRightAction = (text, color, x, progress, id) => {
+	renderRightAction = (text, color, x, progress, id, item, index) => {
 		const trans = progress.interpolate({
 			inputRange: [0, 1],
 			outputRange: [x, 0],
 		})
 
+		const closeRow = () => {
+			refsArray[item._id].close()
+		}
+
 		const pressHandler = () => {
 			if (text === 'pencil') {
-				alert('hey')
+				closeRow()
+				navigation.navigate('EditAppointment', { patientId: item })
 			} else {
-				removeAppointment(id)
+				removeAppointment(id, closeRow)
 			}
 		}
 
@@ -103,23 +116,37 @@ const HomeScreen = ({ navigation, route }) => {
 		)
 	}
 
-	renderRightActions = (progress, id) => (
+	renderRightActions = (progress, id, item, index) => (
 		<RightButtonsHandler>
-			{renderRightAction('pencil', '#B4C1CB', 160, progress, id)}
-			{renderRightAction('trashcan', '#F85A5A', 80, progress, id)}
+			{renderRightAction('pencil', '#B4C1CB', 160, progress, id, item, index)}
+			{renderRightAction('trashcan', '#F85A5A', 80, progress, id, item, index)}
 		</RightButtonsHandler>
 	)
+
+	const listEmptyComponent = () => {
+		return noConnection === false ? (
+			<ActionText style={{ color: '#816CFF' }}>Нет запланированных приемов.. 💁‍♀️</ActionText>
+		) : (
+			<ActionText style={{ color: '#F38181' }}>
+				Пожалуйста проверьте соединение с сервером... ⚙️
+			</ActionText>
+		)
+	}
 
 	return (
 		<Container>
 			<SectionList
 				ref={ref}
 				style={{ paddingLeft: 20, paddingRight: 20 }}
-				sections={data}
+				sections={data ? data : null}
 				keyExtractor={(item) => item._id}
 				renderItem={({ item, index }) => (
 					<Swipeable
-						renderRightActions={(progress) => renderRightActions(progress, item._id)}
+						ref={(ref) => {
+							refsArray[item._id] = ref
+						}}
+						renderRightActions={(progress) => renderRightActions(progress, item._id, item, index)}
+						index={item._id}
 						friction={2}
 					>
 						<Appointment navigation={navigation} item={item} index={index} />
@@ -129,11 +156,7 @@ const HomeScreen = ({ navigation, route }) => {
 					section.data.length > 0 ? <SectionTitle>{section.title}</SectionTitle> : null
 				}
 				refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAppointments} />}
-				ListEmptyComponent={
-					<ActionText style={{ color: 'red' }}>
-						Пожалуйста проверьте соединение с сервером...
-					</ActionText>
-				}
+				ListEmptyComponent={() => listEmptyComponent()}
 			/>
 
 			{/* убрал круглую кнопку, удалил импорт данной кнопки из компонентов
