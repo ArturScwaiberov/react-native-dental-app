@@ -32,7 +32,9 @@ const PatientsListScreen = ({ navigation }) => {
 			.get()
 			.then(({ data }) => {
 				setData(data.message)
-				setNoConnection(false)
+				if (data && data.status === 'success') {
+					setNoConnection(false)
+				}
 			})
 			.catch((error) => {
 				/* error.request ? setNoConnection(true) : console.log('Error', error.message) */

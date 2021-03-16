@@ -3,5 +3,10 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"prettier.semi": false,
+		"prettier.singleQuote": true,
+		"prettier.jsxSingleQuote": true
+	}
 }
